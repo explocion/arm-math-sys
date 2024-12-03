@@ -1,14 +1,11 @@
 use std::{
     env::{self, VarError},
-    fs::OpenOptions,
-    io::{self, Seek, SeekFrom},
     path::PathBuf,
     str::FromStr,
 };
 
 use bindgen::{Builder, EnumVariation};
 use git2::{build::RepoBuilder, FetchOptions, Repository};
-use zip::ZipArchive;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Endianess {
@@ -147,39 +144,7 @@ fn main() {
     let outputs = PathBuf::from(env::var("OUT_DIR").unwrap());
 
     const CMSIS_5_VERSION: &str = "5.7.0";
-
-    let pack = outputs.join(format!("ARM.CMSIS.{}.pack", CMSIS_5_VERSION));
-    let file = if !pack.is_file() {
-        let response = ureq::get(&format!(
-            "https://github.com/ARM-software/CMSIS_5/releases/download/{}/ARM.CMSIS.{}.pack",
-            CMSIS_5_VERSION, CMSIS_5_VERSION
-        ))
-        .call()
-        .unwrap();
-        let bytes = response.header("Content-Length").unwrap().parse().unwrap();
-        let mut file = OpenOptions::new()
-            .read(true)
-            .write(true)
-            .truncate(true)
-            .create(true)
-            .open(&pack)
-            .unwrap();
-        let written = io::copy(&mut response.into_reader(), &mut file).unwrap();
-        assert_eq!(written, bytes);
-        file.seek(SeekFrom::Start(0)).unwrap();
-        file
-    } else {
-        OpenOptions::new().read(true).open(&pack).unwrap()
-    };
-
-    let cmsis = outputs.join(format!("ARM.CMSIS.{}", CMSIS_5_VERSION));
-    if !cmsis.is_dir()
-        || pack.metadata().unwrap().modified().unwrap()
-            >= cmsis.metadata().unwrap().modified().unwrap()
-    {
-        let mut archive = ZipArchive::new(&file).unwrap();
-        archive.extract(&cmsis).unwrap();
-    }
+    let cmsis = PathBuf::from(format!("ARM.CMSIS.{}", CMSIS_5_VERSION));
 
     const NEWLIB_GIT: &str = "https://sourceware.org/git/newlib-cygwin.git";
     let newlib = outputs.join("newlib-cygwin");

@@ -3,14 +3,17 @@ name = "arm-math-sys"
 version = "0.1.0"
 edition = "2021"
 
+[dependencies]
+libm = { version = "0.2.11", optional = true }
+
 [build-dependencies]
 bindgen = "0.70.1"
 git2 = "0.19.0"
-ureq = "2.11.0"
-zip = "2.2.1"
 
 [features]
+default = ["libm"]
 cm7 = []
 f32 = []
 f64 = ["f32"]
 dsp = []
+libm = ["dep:libm"]
